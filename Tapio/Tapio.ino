@@ -15,7 +15,7 @@ void setup() {
   Serial.begin(115200);
   Serial.println("\n Starting");
   pinMode(resetPIN,INPUT_PULLUP);
-  wifi_station_set_hostname("d");
+  wifi_station_set_hostname("TapioPlant");
   if (isWiFiCredentialsSaved()){
   WifiSTAMode();
   }else{
