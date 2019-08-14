@@ -5,18 +5,7 @@
 #include <SPI.h>
 #include <TFT_22_ILI9225.h>
 
-enum Emotion {
-  wink,
-  sleep,
-  squint,
-  sick,
-  flashy,
-  vampire,
-  yawn,
-  hot,
-  chilled,
-  thirsty
-};
+
 
 bool isWifiStarted = false;
 int resetPIN = 9;
@@ -50,7 +39,7 @@ void setup() {
   tft.setOrientation(2);
   tft.setFont(Terminal6x8);
   tft.drawText(10, 10, "Tapio !");
-  
+  tft.drawText(10, 30, "eabjhpio !");
   wifi_station_set_hostname("TapioPlant");
   if (isWiFiCredentialsSaved()){
   WifiSTAMode();
@@ -160,10 +149,7 @@ void saveSSIDandPassword(String ssid,String password){
   writeString(sizeof(ssid),password);
 }
 bool isWiFiCredentialsSaved(){
-  Serial.println("hey!");
-  Serial.println(sizeof(read_String(0)));
-  return ( (read_String(0) != NULL));
-   
+  return ( (sizeof(read_String(0)) > 12));
 }
 String getWiFiSSID(){
   return read_String(0);
