@@ -2,19 +2,55 @@
 #include <WiFiClient.h>
 #include <EEPROM.h>
 #include <ArduinoJson.h>
+#include <SPI.h>
+#include <TFT_22_ILI9225.h>
+
+enum Emotion {
+  wink,
+  sleep,
+  squint,
+  sick,
+  flashy,
+  vampire,
+  yawn,
+  hot,
+  chilled,
+  thirsty
+};
 
 bool isWifiStarted = false;
-int resetPIN = 0;
+int resetPIN = 9;
 
 WiFiServer server(80);
 String Wifissid;
 String Wifipassword;
 
+#define temprature D2
+#define light D3
+#define soilMoisture D4
+
+#define TFT_RST D0
+#define TFT_RS  D1
+#define TFT_CS  D8  // SS
+#define TFT_SDI D7  // MOSI
+#define TFT_CLK D5  // SCK
+#define TFT_LED D2   // 0 if wired to +5V directly
+
+TFT_22_ILI9225 tft = TFT_22_ILI9225(TFT_RST, TFT_RS, TFT_CS, TFT_LED);
 
 void setup() {
+  pinMode(temprature,OUTPUT);
+  pinMode(light,OUTPUT);
+  pinMode(soilMoisture,OUTPUT);
+  pinMode(A0,INPUT);
   Serial.begin(115200);
   Serial.println("\n Starting");
   pinMode(resetPIN,INPUT_PULLUP);
+  tft.begin();
+  tft.setOrientation(2);
+  tft.setFont(Terminal6x8);
+  tft.drawText(10, 10, "Tapio !");
+  
   wifi_station_set_hostname("TapioPlant");
   if (isWiFiCredentialsSaved()){
   WifiSTAMode();
@@ -95,6 +131,7 @@ if ((millis() > (1*60*1000)) && (WiFi.status() != WL_CONNECTED) && !isWifiStarte
   }
   }
 }
+
 void WifiSTAMode(){
   isWifiStarted = false;
   Serial.println("Connecting to WIFI");
@@ -103,6 +140,7 @@ void WifiSTAMode(){
   WiFi.begin(getWiFiSSID(),getWiFiPassword());
   WiFi.mode(WIFI_STA);
  }
+ 
 void WifiAPMode(){
    Serial.println("WIFI AP MODE");
    isWifiStarted = true;
@@ -166,3 +204,47 @@ String read_String(char add)
   data[len]='\0';
   return String(data);
 }
+
+
+
+//Reading Sensors
+float getAnalogSensorValue() 
+{
+  float val = analogRead(A0);
+  float mv = (val / 1023.0);
+  float vAtAnalog = (val / 1023.0) * 3.3;
+  mv = vAtAnalog * 1000;
+  return mv;
+}
+void stopAllSensors(){
+  digitalWrite(temprature,LOW);
+  digitalWrite(light,LOW);
+  digitalWrite(soilMoisture,LOW);
+}
+float getTemprature(){
+  stopAllSensors();
+  digitalWrite(temprature,HIGH);
+  delay(1000);
+  float sensorValue = getAnalogSensorValue(); 
+  stopAllSensors();
+  delay(1000);
+  return sensorValue;
+ }
+ float getSoilMoisture(){
+  stopAllSensors();
+  digitalWrite(soilMoisture,HIGH);
+  delay(1000);
+  float sensorValue = getAnalogSensorValue(); 
+  stopAllSensors();
+  delay(1000);
+  return sensorValue;
+  }
+  float getLightIntensity(){
+  stopAllSensors();
+  digitalWrite(light,HIGH);
+  delay(1000);
+  float sensorValue = getAnalogSensorValue(); 
+  stopAllSensors();
+  delay(1000);
+  return sensorValue;
+  }
