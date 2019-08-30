@@ -47,21 +47,22 @@ void setup() {
   }
   pinMode(resetPIN,INPUT_PULLUP);
   tft.begin();
-  tft.setOrientation(0);
-  tft.fillRectangle(0,0,176,220,COLOR_WHITE);
-  wifi_station_set_hostname("TapioPlant");
+  tft.setOrientation(2);
+  tft.setBackgroundColor(COLOR_WHITE);
+  tft.fillRectangle(0,0,176,220,COLOR_WHITE);  
+  wifi_station_set_hostname("Tapio");
   if (isWiFiCredentialsSaved()){
   WifiSTAMode();
   }else{
   WifiAPMode();
   }
-  listFiles();  
+  listFiles(); 
+  drawJpeg("/logo.jpg",0,0);
 }
 
 
 void loop() {
     WifiModeSelector();
     getSocketRequests();
-    drawJpeg("/1.jpg", 0 , 0);
-//    drawJpeg("/2.jpg", 0 , 0);
+//    readEmotions();
 }
