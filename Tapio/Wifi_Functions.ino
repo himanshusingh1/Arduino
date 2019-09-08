@@ -1,31 +1,4 @@
 
-//handle socket
-void getSocketRequests(){
-  
-  WiFiClient client = server.available();
-  if (client) {
-    client.flush();
-    if(client.connected())
-    {
-      Serial.println("Client Connected");
-    }
-    String myrequest = "";
-    while(client.connected()){ 
-      while(client.available()>0){
-        char c = client.read();
-        myrequest += c;
-       if (isValidJSON(myrequest)){
-        delay(100);
-        client.print((parseRequest(myrequest)));
-//        client.stop();
-       }
-    }
-    }
-    client.stop();
-    Serial.println("Client disconnected"); 
-    
-  } 
- }
 String parseRequest(String req){
 Serial.println("========REQ========");
 Serial.println(req);
@@ -61,13 +34,16 @@ return "N/A";
 
 //handle wifiModes
 void WifiModeSelector(){
-if ((millis() > (0*60*1000)) && (WiFi.status() != WL_CONNECTED) && !isWifiStarted){
+if ((millis() > (1*60*1000)) && (WiFi.status() != WL_CONNECTED) && !isWifiStarted){
    WifiAPMode();
   }
   if (WiFi.status() == WL_CONNECTED){
       Serial.println("WiFi is connected");
-       server.stop();
+      if ((millis() - lastReset) > 60){
+        Serial.println("closing wifi");
+       webSocket.close();
        WiFi.mode(WIFI_STA);
+      }
   }
   if (digitalRead(resetPIN) == LOW && !isWifiStarted){
   double buttonClickMillis = millis();
@@ -96,7 +72,8 @@ void WifiAPMode(){
    isWifiStarted = true;
    WiFi.mode(WIFI_AP_STA);  //Both hotspot and client are enabled
    WiFi.softAP("TAPIOP");
-   server.begin();
+   webSocket.begin();
+   webSocket.onEvent(webSocketEvent);
 }   
 
 
@@ -104,6 +81,7 @@ bool isWiFiCredentialsSaved(){
   DynamicJsonDocument doc = loadWiFiConfig();
   return (doc.containsKey("password") && doc.containsKey("ssid"));
 }
+
 String getWiFiSSID(){
   DynamicJsonDocument doc = loadWiFiConfig();
   return doc["ssid"];
@@ -129,7 +107,7 @@ String getAvialableSSIDList(){
   return results;
   }
 
- bool isValidJSON(String req){
+bool isValidJSON(String req){
   Serial.println(req);
   DynamicJsonDocument doc(1024);
   DeserializationError err = deserializeJson(doc, req);
@@ -144,4 +122,34 @@ String getAvialableSSIDList(){
         break;
 }
   return false;
+}
+
+void webSocketEvent(uint8_t num, WStype_t type, uint8_t * payload, size_t length) {
+    String Recrequest = "";
+    switch(type) {
+        case WStype_DISCONNECTED:
+            break;
+        case WStype_CONNECTED:
+            {
+                IPAddress ip = webSocket.remoteIP(num);
+                Serial.printf("[%u] Connected from %d.%d.%d.%d url: %s\n", num, ip[0], ip[1], ip[2], ip[3], payload);
+            }
+            break;
+        case WStype_TEXT:
+            for(int i = 0;i<length;i++){
+               Recrequest = Recrequest + char(payload[i]);
+            }
+             Serial.printf("[%u] Text: %s\n", num, payload);
+              if (isValidJSON(Recrequest)){
+               String response = parseRequest(Recrequest);
+              webSocket.sendTXT(num, response);
+              }else{
+               webSocket.sendTXT(num, "BAD");
+              }
+            break;
+        case WStype_ERROR:
+            break;
+        default:
+            break;
+    }
 }

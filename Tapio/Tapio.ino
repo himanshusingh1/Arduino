@@ -6,6 +6,8 @@
 #include <TFT_22_ILI9225.h>
 #define FS_NO_GLOBALS
 #include <FS.h>
+#include <WebSocketsServer.h>
+#include <ESP8266WiFiMulti.h>
 
 #ifdef ESP32
   #include "SPIFFS.h" // ESP32 only
@@ -18,10 +20,12 @@
 bool isWifiStarted = false;
 int resetPIN = 9;
 
-WiFiServer server(80);
+ESP8266WiFiMulti WiFiMulti;
+WebSocketsServer webSocket = WebSocketsServer(81);
+
 String Wifissid;
 String Wifipassword;
-
+double lastReset = millis();
 #define temprature D2
 #define light D3
 #define soilMoisture D4
@@ -48,8 +52,8 @@ void setup() {
   pinMode(resetPIN,INPUT_PULLUP);
   tft.begin();
   tft.setOrientation(2);
-  tft.setBackgroundColor(COLOR_WHITE);
-  tft.fillRectangle(0,0,176,220,COLOR_WHITE);  
+  tft.setBackgroundColor(COLOR_BLACK);
+  tft.fillRectangle(0,0,176,220,COLOR_BLACK);  
   wifi_station_set_hostname("Tapio");
   if (isWiFiCredentialsSaved()){
   WifiSTAMode();
@@ -57,12 +61,24 @@ void setup() {
   WifiAPMode();
   }
   listFiles(); 
-  drawJpeg("/logo.jpg",0,0);
+  drawJpeg("/l_eye_1.jpg",10,10);
+  drawJpeg("/r_eye_1.jpg",100,10);
+  
 }
 
 
 void loop() {
-    WifiModeSelector();
-    getSocketRequests();
+  drawJpeg("/l_eye_1.jpg",10,10);
+  drawJpeg("/l_eye_2.jpg",10,10);
+  drawJpeg("/l_eye_3.jpg",10,10);
+  drawJpeg("/l_eye_4.jpg",10,10);
+  drawJpeg("/l_eye_5.jpg",10,10);
+  drawJpeg("/l_eye_5.jpg",10,10);
+  drawJpeg("/l_eye_4.jpg",10,10);
+  drawJpeg("/l_eye_3.jpg",10,10);
+  drawJpeg("/l_eye_2.jpg",10,10);
+  drawJpeg("/l_eye_1.jpg",10,10);
+//    webSocket.loop();
+//    WifiModeSelector();
 //    readEmotions();
 }

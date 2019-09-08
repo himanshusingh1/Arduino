@@ -19,25 +19,15 @@ void drawJpeg(const char *filename, int xpos, int ypos) {
 
   // Open the named file (the Jpeg decoder library will close it after rendering image)
   fs::File jpegFile = SPIFFS.open( filename, "r");    // File handle reference for SPIFFS
-  //  File jpegFile = SD.open( filename, FILE_READ);  // or, file handle reference for SD library
-
   //ESP32 always seems to return 1 for jpegFile so this null trap does not work
   if ( !jpegFile ) {
     Serial.print("ERROR: File \""); Serial.print(filename); Serial.println ("\" not found!");
     return;
   }
 
-  // Use one of the three following methods to initialise the decoder,
-  // the filename can be a String or character array type:
-
-  //boolean decoded = JpegDec.decodeFsFile(jpegFile); // Pass a SPIFFS file handle to the decoder,
-  //boolean decoded = JpegDec.decodeSdFile(jpegFile); // or pass the SD file handle to the decoder,
   boolean decoded = JpegDec.decodeFsFile(filename);  // or pass the filename (leading / distinguishes SPIFFS files)
 
   if (decoded) {
-    // print information about the image to the serial port
-//    jpegInfo();
-
     // render the image onto the screen at given coordinates
     jpegRender(xpos, ypos);
   }
@@ -50,7 +40,7 @@ void drawJpeg(const char *filename, int xpos, int ypos) {
 //   Decode and render the Jpeg image onto the TFT screen
 //====================================================================================
 void jpegRender(int xpos, int ypos) {
-
+  
   // retrieve infomration about the image
   uint16_t  *pImg;
   int16_t mcu_w = JpegDec.MCUWidth;
@@ -75,6 +65,7 @@ void jpegRender(int xpos, int ypos) {
   // to the screen size
   max_x += xpos;
   max_y += ypos;
+  SPI.beginTransaction(SPISettings(79000000, MSBFIRST, SPI_MODE0));
 
   // read each MCU block until there are no more
   while ( JpegDec.readSwappedBytes()) { // Swapped byte order read
@@ -103,20 +94,12 @@ void jpegRender(int xpos, int ypos) {
       }
     }
 
-    // draw image MCU block only if it will fit on the screen
-     for (int jj  =mcu_y;jj<mcu_y + win_h;jj++)
-     {
-        for (int ii=mcu_x;ii<mcu_x + win_w ;ii++)
-        {
-          tft.drawPixel(ii,jj,*pImg++);
-//            if (*pImg++ == 0){
-//             tft.drawPixel(ii,jj,COLOR_WHITE); 
-//              }else{
-//             tft.drawPixel(ii,jj,COLOR_TURQUOISE ); 
-//             }
-             
-        }
-     }
+      // draw image MCU block only if it will fit on the screen
+    if (( mcu_x + win_w ) <= tft.width() && ( mcu_y + win_h ) <= tft.height())
+      tft.pushImage(mcu_x, mcu_y, win_w, win_h, pImg);
+    else if ( (mcu_y + win_h) >= tft.height())
+      JpegDec.abort(); // Image has run off bottom of screen so abort decoding
+  }
  
   }
 
